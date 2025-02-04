@@ -1,0 +1,370 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "# Programming assignment 1: k-Nearest Neighbors classification"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import numpy as np\n",
+    "from sklearn import datasets, model_selection\n",
+    "import matplotlib.pyplot as plt\n",
+    "%matplotlib inline  "
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Introduction\n",
+    "For those of you new to Python, there are lots of tutorials online, just pick whichever you like best :)\n",
+    "\n",
+    "If you never worked with Numpy or Jupyter before, you can check out these guides\n",
+    "* https://numpy.org/devdocs/user/quickstart.html\n",
+    "* http://jupyter.readthedocs.io/en/latest/"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Your task\n",
+    "In this notebook code to perform k-NN classification is provided. However, some functions are incomplete. Your task is to fill in the missing code and run the entire notebook. \n",
+    "\n",
+    "You are only allowed to use the imported packages. Importing anything else is NOT allowed. \n",
+    "\n",
+    "In the beginning of every function there is docstring, which specifies the format of input and output. Write your code in a way that adheres to it.\n",
+    "You may only use plain python and `numpy` functions (i.e. no scikit-learn classifiers).\n",
+    "\n",
+    "In addition, we strongly recommend you to solve this task **without a single for loop**, i.e., only via vectorized (`numpy`) operations."
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Load dataset\n",
+    "The iris data set (https://en.wikipedia.org/wiki/Iris_flower_data_set) is loaded and split into train and test parts by the function `load_dataset`."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def load_dataset(split):\n",
+    "    \"\"\"Load and split the dataset into training and test parts.\n",
+    "    \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    split : float in range (0, 1)\n",
+    "        Fraction of the data used for training.\n",
+    "    \n",
+    "    Returns\n",
+    "    -------\n",
+    "    X_train : array, shape (N_train, 4)\n",
+    "        Training features.\n",
+    "    y_train : array, shape (N_train)\n",
+    "        Training labels.\n",
+    "    X_test : array, shape (N_test, 4)\n",
+    "        Test features.\n",
+    "    y_test : array, shape (N_test)\n",
+    "        Test labels.\n",
+    "    \"\"\"\n",
+    "    dataset = datasets.load_iris()\n",
+    "    X, y = dataset['data'], dataset['target']\n",
+    "    X_train, X_test, y_train, y_test = model_selection.train_test_split(X, y, random_state=123, test_size=(1 - split))\n",
+    "    return X_train, X_test, y_train, y_test"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# prepare data\n",
+    "split = 0.75\n",
+    "X_train, X_test, y_train, y_test = load_dataset(split)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Plot dataset\n",
+    "Since the data has 4 features, 16 scatterplots (4x4) are plotted showing the dependencies between each pair of features."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "f, axes = plt.subplots(4, 4,figsize=(15, 15))\n",
+    "for i in range(4):\n",
+    "    for j in range(4):\n",
+    "        if j == 0 and i == 0:\n",
+    "            axes[i,j].text(0.5, 0.5, 'Sepal. length', ha='center', va='center', size=24, alpha=.5)\n",
+    "        elif j == 1 and i == 1:\n",
+    "            axes[i,j].text(0.5, 0.5, 'Sepal. width', ha='center', va='center', size=24, alpha=.5)\n",
+    "        elif j == 2 and i == 2:\n",
+    "            axes[i,j].text(0.5, 0.5, 'Petal. length', ha='center', va='center', size=24, alpha=.5)\n",
+    "        elif j == 3 and i == 3:\n",
+    "            axes[i,j].text(0.5, 0.5, 'Petal. width', ha='center', va='center', size=24, alpha=.5)\n",
+    "        else:\n",
+    "            axes[i,j].scatter(X_train[:,j],X_train[:,i], c=y_train, cmap=plt.cm.cool)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Task 1: Euclidean distance\n",
+    "Compute Euclidean distance between two data points."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def euclidean_distance(x1, x2):\n",
+    "    \"\"\"Compute pairwise Euclidean distances between two data points.\n",
+    "    \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    x1 : array, shape (N, 4)\n",
+    "        First set of data points.\n",
+    "    x2 : array, shape (M, 4)\n",
+    "        Second set of data points.\n",
+    "    \n",
+    "    Returns\n",
+    "    -------\n",
+    "    distance : float array, shape (N, M)\n",
+    "        Pairwise Euclidean distances between x1 and x2.\n",
+    "    \"\"\"\n",
+    "    # TODO\n",
+    "    return 0"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Task 2: get k nearest neighbors' labels\n",
+    "Get the labels of the *k* nearest neighbors of the datapoint *x_new*."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def get_neighbors_labels(X_train, y_train, X_new, k):\n",
+    "    \"\"\"Get the labels of the k nearest neighbors of the datapoints x_new.\n",
+    "    \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    X_train : array, shape (N_train, 4)\n",
+    "        Training features.\n",
+    "    y_train : array, shape (N_train)\n",
+    "        Training labels.\n",
+    "    X_new : array, shape (M, 4)\n",
+    "        Data points for which the neighbors have to be found.\n",
+    "    k : int\n",
+    "        Number of neighbors to return.\n",
+    "        \n",
+    "    Returns\n",
+    "    -------\n",
+    "    neighbors_labels : array, shape (M, k)\n",
+    "        Array containing the labels of the k nearest neighbors.\n",
+    "    \"\"\"\n",
+    "    # TODO\n",
+    "    return []"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Task 3: get the majority label\n",
+    "For the previously computed labels of the *k* nearest neighbors, compute the actual response. I.e. give back the class of the majority of nearest neighbors. In case of a tie, choose the \"lowest\" label (i.e. the order of tie resolutions is 0 > 1 > 2)."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def get_response(neighbors_labels, num_classes=3):\n",
+    "    \"\"\"Predict label given the set of neighbors.\n",
+    "    \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    neighbors_labels : array, shape (M, k)\n",
+    "        Array containing the labels of the k nearest neighbors per data point.\n",
+    "    num_classes : int\n",
+    "        Number of classes in the dataset.\n",
+    "    \n",
+    "    Returns\n",
+    "    -------\n",
+    "    y : int array, shape (M,)\n",
+    "        Majority class among the neighbors.\n",
+    "    \"\"\"\n",
+    "    # TODO\n",
+    "    return np.zeros(neighbors_labels.shape[0])"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Task 4: compute accuracy\n",
+    "Compute the accuracy of the generated predictions."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "def compute_accuracy(y_pred, y_test):\n",
+    "    \"\"\"Compute accuracy of prediction.\n",
+    "    \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    y_pred : array, shape (N_test)\n",
+    "        Predicted labels.\n",
+    "    y_test : array, shape (N_test)\n",
+    "        True labels.\n",
+    "    \"\"\"\n",
+    "    # TODO\n",
+    "    return 0"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# This function is given, nothing to do here.\n",
+    "def predict(X_train, y_train, X_test, k):\n",
+    "    \"\"\"Generate predictions for all points in the test set.\n",
+    "    \n",
+    "    Parameters\n",
+    "    ----------\n",
+    "    X_train : array, shape (N_train, 4)\n",
+    "        Training features.        \n",
+    "    y_train : array, shape (N_train)\n",
+    "        Training labels.\n",
+    "    X_test : array, shape (N_test, 4)\n",
+    "        Test features.\n",
+    "    k : int\n",
+    "        Number of neighbors to consider.\n",
+    "    \n",
+    "    Returns\n",
+    "    -------\n",
+    "    y_pred : array, shape (N_test)\n",
+    "        Predictions for the test data.\n",
+    "    \"\"\"\n",
+    "    neighbors = get_neighbors_labels(X_train, y_train, X_test, k)\n",
+    "    y_pred = get_response(neighbors)\n",
+    "    return y_pred"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "metadata": {},
+   "source": [
+    "## Testing\n",
+    "Should output an accuracy of 0.9473684210526315."
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "# prepare data\n",
+    "split = 0.75\n",
+    "X_train, X_test, y_train, y_test = load_dataset(split)\n",
+    "print('Training set: {0} samples'.format(X_train.shape[0]))\n",
+    "print('Test set: {0} samples'.format(X_test.shape[0]))\n",
+    "\n",
+    "# generate predictions\n",
+    "k = 3\n",
+    "y_pred = predict(X_train, y_train, X_test, k)\n",
+    "accuracy = compute_accuracy(y_pred, y_test)\n",
+    "print('Accuracy = {0}'.format(accuracy))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.6.11"
+  },
+  "toc": {
+   "colors": {
+    "hover_highlight": "#DAA520",
+    "navigate_num": "#000000",
+    "navigate_text": "#333333",
+    "running_highlight": "#FF0000",
+    "selected_highlight": "#FFD700",
+    "sidebar_border": "#EEEEEE",
+    "wrapper_background": "#FFFFFF"
+   },
+   "moveMenuLeft": true,
+   "nav_menu": {
+    "height": "207px",
+    "width": "252px"
+   },
+   "navigate_menu": true,
+   "number_sections": true,
+   "sideBar": true,
+   "threshold": 4,
+   "toc_cell": false,
+   "toc_section_display": "block",
+   "toc_window_display": false,
+   "widenNotebook": false
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 4
+}

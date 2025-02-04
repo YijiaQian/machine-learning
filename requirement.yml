@@ -1,0 +1,27 @@
+name: ml_env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.8
+  - numpy
+  - pandas
+  - scipy
+  - scikit-learn
+  - matplotlib
+  - seaborn
+  - jupyterlab
+  - ipykernel
+  - tensorflow
+  - pytorch
+  - torchvision
+  - transformers
+  - xgboost
+  - lightgbm
+  - catboost
+  - opencv
+
+  # pip packages (for those not available in conda)
+  - pip
+  - pip:
+      - torchaudio
